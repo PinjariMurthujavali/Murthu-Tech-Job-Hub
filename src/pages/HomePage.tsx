@@ -11,6 +11,7 @@ import { motion } from 'motion/react';
 import JobCard from '../components/JobCard';
 import ReportJobModal from '../components/ReportJobModal';
 import { apiFetch } from '../lib/api';
+import { groupCategories } from '../lib/categories';
 import { useAuth } from '../context/AuthContext';
 import type { CategoryItem, CompanyItem, JobItem, PortalStats } from '../types';
 
@@ -123,11 +124,7 @@ export default function HomePage() {
     });
   };
 
-  const groupedCategories = categories.reduce<Record<string, CategoryItem[]>>((acc, c) => {
-    if (!acc[c.groupName]) acc[c.groupName] = [];
-    acc[c.groupName].push(c);
-    return acc;
-  }, {});
+  const groupedCategories = groupCategories(categories);
 
   return (
     <div>

@@ -44,3 +44,10 @@ test('preserves API error handling and POST responses', async () => {
   respond({ success: true });
   assert.deepEqual(await apiFetch('/api/jobs', { method: 'POST' }), { success: true });
 });
+
+test('rejects malformed category entries that would crash grouping or filtering', async () => {
+  for (const payload of [[null], [{}], [{ name: 'IT', groupName: null }]]) {
+    respond(payload);
+    await assert.rejects(apiFetch('/api/jobs/categories'), /invalid categories/);
+  }
+});

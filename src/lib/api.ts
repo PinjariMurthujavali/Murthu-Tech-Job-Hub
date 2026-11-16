@@ -1,3 +1,5 @@
+import { isCategoryItem } from './categories';
+
 let memoryToken: string | null = null;
 
 export function setApiAuthToken(token: string | null) {
@@ -44,6 +46,11 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
     const arrayEndpoints = ['/api/jobs/categories', '/api/jobs/companies', '/api/user/saved-jobs'];
     if (arrayEndpoints.includes(pathname) && !Array.isArray(data)) {
       throw new Error('The job service returned an invalid list. Please try again later.');
+    }
+    if (pathname === '/api/jobs/categories' && (
+      !Array.isArray(data) || !data.every(isCategoryItem)
+    )) {
+      throw new Error('The job service returned invalid categories. Please try again later.');
     }
     if (pathname === '/api/jobs' && (
       !data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)

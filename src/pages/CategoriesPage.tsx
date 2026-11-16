@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { groupCategories } from '../lib/categories';
 import type { CategoryItem } from '../types';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     document.title = 'Job Categories – MURTHU JOB HUB';
     apiFetch<CategoryItem[]>('/api/jobs/categories')
       .then(setCategories)
-      .catch(() => {})
+      .catch(() => setLoadError('Categories are temporarily unavailable. Please try again later.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -23,11 +25,7 @@ export default function CategoriesPage() {
       c.groupName.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const grouped = filtered.reduce<Record<string, CategoryItem[]>>((acc, item) => {
-    if (!acc[item.groupName]) acc[item.groupName] = [];
-    acc[item.groupName].push(item);
-    return acc;
-  }, {});
+  const grouped = groupCategories(filtered);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -55,6 +53,9 @@ export default function CategoriesPage() {
         </div>
       </div>
 
+      {loadError && (
+        <p role="alert" className="mt-6 text-sm text-amber-200">{loadError}</p>
+      )}
       {loading ? (
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
           {[1, 2, 3, 4].map((n) => (
