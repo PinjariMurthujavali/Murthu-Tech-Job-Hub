@@ -23,6 +23,9 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   });
 
   const contentType = res.headers.get('content-type') || '';
+  if (res.ok && !contentType.includes('application/json')) {
+    throw new Error('Job services are temporarily unavailable. Please try again later.');
+  }
   const data = contentType.includes('application/json') ? await res.json() : await res.text();
 
   if (!res.ok) {

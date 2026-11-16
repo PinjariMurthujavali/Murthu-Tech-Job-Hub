@@ -56,6 +56,7 @@ export default function HomePage() {
   const [recentVerified, setRecentVerified] = useState<JobItem[]>([]);
   const [activeTrack, setActiveTrack] = useState<(typeof TRACK_TABS)[number]['id']>('latest');
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [jobsError, setJobsError] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
   const [reportTarget, setReportTarget] = useState<JobItem | null>(null);
 
@@ -88,6 +89,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoadingJobs(true);
+    setJobsError(false);
     const params = new URLSearchParams({ limit: '6', sort: 'latest' });
     if (activeTrack === 'latest') params.set('sort', 'verified');
     if (activeTrack === 'fresher') params.set('experienceLevel', 'Fresher');
@@ -100,7 +102,10 @@ export default function HomePage() {
 
     apiFetch<{ items: JobItem[] }>(`/api/jobs?${params.toString()}`)
       .then((res) => setTrackJobs(res.items))
-      .catch(() => setTrackJobs([]))
+      .catch(() => {
+        setTrackJobs([]);
+        setJobsError(true);
+      })
       .finally(() => setLoadingJobs(false));
   }, [activeTrack]);
 
@@ -338,6 +343,11 @@ export default function HomePage() {
                 className="h-64 animate-pulse rounded-xl border border-white/[0.06] bg-[#0C1228]"
               />
             ))}
+          </div>
+        ) : jobsError ? (
+          <div role="status" className="mt-8 rounded-xl border border-white/[0.08] bg-[#0C1228] p-10 text-center">
+            <p className="text-base font-medium text-white">Job listings are temporarily unavailable.</p>
+            <p className="mt-1 text-sm text-slate-400">Please try again later. You can still browse the rest of the site.</p>
           </div>
         ) : trackJobs.length === 0 ? (
           <div className="mt-8 rounded-xl border border-white/[0.08] bg-[#0C1228] p-10 text-center">
