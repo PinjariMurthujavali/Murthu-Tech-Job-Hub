@@ -49,6 +49,7 @@ export default function HomePage() {
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  const [loadError, setLoadError] = useState('');
   const [stats, setStats] = useState<PortalStats | null>(null);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
@@ -73,7 +74,7 @@ export default function HomePage() {
         setCompanies(comps.slice(0, 8));
         setRecentVerified(recent.items);
       })
-      .catch(() => {});
+      .catch(() => setLoadError('Job listings are temporarily unavailable. Please try again later.'));
   }, []);
 
   useEffect(() => {
@@ -130,6 +131,11 @@ export default function HomePage() {
 
   return (
     <div>
+      {loadError && (
+        <div role="alert" className="mx-auto max-w-7xl px-4 py-4 text-sm text-amber-200 sm:px-6 lg:px-8">
+          {loadError}
+        </div>
+      )}
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-white/[0.08]">
         <div className="absolute inset-0">
