@@ -11,6 +11,7 @@ import { motion } from 'motion/react';
 import JobCard from '../components/JobCard';
 import ReportJobModal from '../components/ReportJobModal';
 import { apiFetch } from '../lib/api';
+import { groupCategories } from '../lib/categories';
 import { useAuth } from '../context/AuthContext';
 import type { CategoryItem, CompanyItem, JobItem, PortalStats } from '../types';
 
@@ -49,6 +50,7 @@ export default function HomePage() {
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  const [loadError, setLoadError] = useState('');
   const [stats, setStats] = useState<PortalStats | null>(null);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
@@ -73,7 +75,7 @@ export default function HomePage() {
         setCompanies(comps.slice(0, 8));
         setRecentVerified(recent.items);
       })
-      .catch(() => {});
+      .catch(() => setLoadError('Job listings are temporarily unavailable. Please try again later.'));
   }, []);
 
   useEffect(() => {
@@ -122,14 +124,15 @@ export default function HomePage() {
     });
   };
 
-  const groupedCategories = categories.reduce<Record<string, CategoryItem[]>>((acc, c) => {
-    if (!acc[c.groupName]) acc[c.groupName] = [];
-    acc[c.groupName].push(c);
-    return acc;
-  }, {});
+  const groupedCategories = groupCategories(categories);
 
   return (
     <div>
+      {loadError && (
+        <div role="alert" className="mx-auto max-w-7xl px-4 py-4 text-sm text-amber-200 sm:px-6 lg:px-8">
+          {loadError}
+        </div>
+      )}
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-white/[0.08]">
         <div className="absolute inset-0">
