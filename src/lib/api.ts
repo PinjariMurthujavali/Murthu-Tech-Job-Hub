@@ -25,6 +25,10 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   const contentType = res.headers.get('content-type') || '';
   const data = contentType.includes('application/json') ? await res.json() : await res.text();
 
+if (res.ok && !contentType.includes('application/json')) {
+  throw new Error('API backend is unreachable (received non-JSON response)');
+}
+
   if (!res.ok) {
     const message =
       typeof data === 'object' && data && 'error' in data
