@@ -1,0 +1,8 @@
+{
+  "name": "MURTHU JOB HUB",
+  "description": "One Platform. Thousands of Opportunities. One Dream Career. Real-time verified job discovery portal across software, hardware, government, remote, and core engineering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

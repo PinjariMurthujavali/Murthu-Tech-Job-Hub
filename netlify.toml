@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy /api/* requests to your live Express + Cloud SQL backend URL when hosting frontend on Netlify
+# Replace BACKEND_ORIGIN with your Cloud Run / Render / Railway backend URL if hosting separately.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
