@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+test.json
+murthu-job-hub-fix
+murthu-job-hub-fix.zip
+uploads/
