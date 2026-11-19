@@ -391,3 +391,20 @@ router.get('/activity', async (req: AuthRequest, res) => {
 });
 
 export default router;
+
+router.post('/verify-subscription', requireAuth, async (req: AuthRequest, res) => {
+  const { accessToken } = req.body;
+  if (!accessToken) return res.status(400).json({ error: 'Missing token' });
+
+  const r = await fetch(
+    `https://www.googleapis.com/youtube/v3/subscriptions?part=id&mine=true&forChannelId=${process.env.YT_CHANNEL_ID}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const data = await r.json();
+  const subscribed = r.ok && Array.isArray(data.items) && data.items.length > 0;
+
+  if (subscribed) {
+    // users table lo youtubeSubscribed = true set cheyyali
+  }
+  res.json({ subscribed });
+});
