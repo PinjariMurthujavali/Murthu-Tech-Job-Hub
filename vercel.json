@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://murthu-job-hub-api.onrender.com/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://murthu-job-hub-api.onrender.com/uploads/:path*" },
+    { "source": "/sitemap.xml", "destination": "https://murthu-job-hub-api.onrender.com/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "https://murthu-job-hub-api.onrender.com/robots.txt" },
+    { "source": "/((?!api/|uploads/).*)", "destination": "/index.html" }
+  ]
+}
