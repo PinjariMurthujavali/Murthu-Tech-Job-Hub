@@ -43,9 +43,9 @@ export default function JobsPage() {
   const [reportTarget, setReportTarget] = useState<JobItem | null>(null);
 
   useEffect(() => {
-    document.title = 'Search Verified Jobs – MURTHU JOB HUB';
+    document.title = 'Search Verified Jobs - MURTHU JOB HUB';
     apiFetch<CategoryItem[]>('/api/jobs/categories')
-      .then(setCategories)
+      .then((rows) => setCategories(Array.isArray(rows) ? rows : []))
       .catch(() => {});
   }, []);
 
@@ -55,7 +55,7 @@ export default function JobsPage() {
       return;
     }
     apiFetch<JobItem[]>('/api/user/saved-jobs')
-      .then((rows) => setSavedIds(new Set(rows.map((r) => r.id))))
+      .then((rows) => setSavedIds(new Set(Array.isArray(rows) ? rows.map((r) => r.id) : [])))
       .catch(() => {});
   }, [user]);
 
@@ -87,10 +87,9 @@ export default function JobsPage() {
       pagination: { total: number; totalPages: number };
     }>(`/api/jobs?${params.toString()}`)
       .then((res) => {
-        setJobs(res.items);
-        setTotal(res.pagination.total);
-        setTotalPages(res.pagination.totalPages);
-      })
+        setJobs(Array.isArray(res?.items) ? res.items : []);
+        setTotal(res?.pagination?.total || 0);
+        setTotalPages(res?.pagination?.totalPages || 1);
       .catch(() => setJobs([]))
       .finally(() => setLoading(false));
   }, [
