@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleAuthProvider } from '../lib/firebase';
 import { apiFetch, setApiAuthToken } from '../lib/api';
 import type { AuthUser, UserProfileData } from '../types';
@@ -9,8 +9,6 @@ interface AuthContextValue {
   profile: UserProfileData | null;
   unreadNotifications: number;
   loading: boolean;
-  subscribed: boolean;
-  verifySubscription: () => Promise<boolean>;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   loginWithGoogle: () => Promise<void>;
@@ -21,7 +19,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const YT_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -29,16 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
-
-  const checkStatus = useCallback(async () => {
-    try {
-      const r = await apiFetch<{ subscribed: boolean }>('/api/user/subscription-status');
-      setSubscribed(r.subscribed);
-    } catch {
-      setSubscribed(false);
-    }
-  }, []);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -50,11 +37,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       setProfile(data.profile);
       setUnreadNotifications(data.unreadNotifications || 0);
-      await checkStatus();
     } catch {
       // Ignore if unauthenticated
     }
-  }, [checkStatus]);
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
@@ -78,24 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [refreshSession]);
 
-  const sendYoutubeToken = async (accessToken?: string) => {
-    if (!accessToken) return false;
-    try {
-      const r = await apiFetch<{ subscribed: boolean }>('/api/user/verify-subscription', {
-        method: 'POST',
-        body: JSON.stringify({ accessToken }),
-      });
-      setSubscribed(r.subscribed);
-      return r.subscribed;
-    } catch {
-      return false;
-    }
-  };
-
   const loginWithGoogle = async () => {
-    googleAuthProvider.addScope(YT_SCOPE);
     const cred = await signInWithPopup(auth, googleAuthProvider);
-    const accessToken = GoogleAuthProvider.credentialFromResult(cred)?.accessToken;
     const idToken = await cred.user.getIdToken();
     setApiAuthToken(idToken);
     await apiFetch('/api/auth/google', {
@@ -103,17 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ idToken }),
     });
     await refreshSession();
-    await sendYoutubeToken(accessToken);
     setAuthModalOpen(false);
-  };
-
-  const verifySubscription = async () => {
-    googleAuthProvider.addScope(YT_SCOPE);
-    const cred = await signInWithPopup(auth, googleAuthProvider);
-    const accessToken = GoogleAuthProvider.credentialFromResult(cred)?.accessToken;
-    const idToken = await cred.user.getIdToken();
-    setApiAuthToken(idToken);
-    return sendYoutubeToken(accessToken);
   };
 
   const loginWithEmail = async (email: string, password: string) => {
@@ -139,7 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setApiAuthToken(null);
     setUser(null);
-    setSubscribed(false);
     setProfile(null);
     setUnreadNotifications(0);
     try {
@@ -156,8 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         unreadNotifications,
         loading,
-        subscribed,
-        verifySubscription,
         authModalOpen,
         setAuthModalOpen,
         loginWithGoogle,

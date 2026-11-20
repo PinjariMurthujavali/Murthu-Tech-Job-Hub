@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
-import SubscribeGate from './components/SubscribeGate';
 import { AuthProvider } from './context/AuthContext';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CategoriesPage from './pages/CategoriesPage';
@@ -22,11 +21,11 @@ export default function App() {
           <Navbar />
           <main className="flex-1">
             <Routes>
-              <Route path="/" element={<SubscribeGate><HomePage /></SubscribeGate>} />
-              <Route path="/jobs" element={<SubscribeGate><JobsPage /></SubscribeGate>} />
-              <Route path="/jobs/:idOrSlug" element={<SubscribeGate><JobDetailPage /></SubscribeGate>} />
-              <Route path="/hyderabad-jobs" element={<SubscribeGate><HyderabadJobsPage /></SubscribeGate>} />
-              <Route path="/categories" element={<SubscribeGate><CategoriesPage /></SubscribeGate>} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/jobs" element={<JobsPage />} />
+              <Route path="/jobs/:idOrSlug" element={<JobDetailPage />} />
+              <Route path="/hyderabad-jobs" element={<HyderabadJobsPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/dashboard" element={<UserDashboardPage />} />
               <Route path="/admin" element={<AdminDashboardPage />} />
