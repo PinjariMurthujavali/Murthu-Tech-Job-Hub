@@ -147,10 +147,11 @@ router.post('/google', async (req, res) => {
     }
 
     res.json({ user: synced });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Google auth sync error:', err);
-    res.status(401).json({ error: 'Google authentication verification failed.' });
+    res.status(401).json({ error: `Google auth failed: ${err?.message || 'unknown'}` });
   }
+  
 });
 
 router.post('/forgot-password', async (req, res) => {
