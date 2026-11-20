@@ -67,6 +67,20 @@ export async function syncOrFetchUser(
   const cleanEmail = email.trim().toLowerCase();
   const isBootstrappedAdmin = DEFAULT_ADMIN_EMAILS.includes(cleanEmail);
 
+  // Same email but different Firebase uid (e.g. Firebase project changed):
+  // relink the existing row so the unique email constraint does not fail.
+  const existingByEmail = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, cleanEmail))
+    .limit(1);
+  if (existingByEmail.length && existingByEmail[0].uid !== uid) {
+    await db
+      .update(users)
+      .set({ uid, updatedAt: new Date() })
+      .where(eq(users.id, existingByEmail[0].id));
+  }
+
   const upserted = await db
     .insert(users)
     .values({
@@ -227,10 +241,9 @@ export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFu
   next();
 };
 
-
 export const requireSubscribed = async (req: AuthRequest, res: Response, next: NextFunction) => {
   // public endpoints (home page stats)
-    if (['/stats', '/categories', '/companies'].includes(req.path)) return next();
+  if (['/stats', '/categories', '/companies'].includes(req.path)) return next();
   if (req.path === '/' && Number(req.query.limit) > 0 && Number(req.query.limit) <= 6) return next();
   try {
     const user = await resolveAuthFromRequest(req);
