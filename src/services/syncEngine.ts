@@ -204,6 +204,21 @@ export async function syncSingleSource(sourceSlug: string): Promise<{
     return { status: 'SKIPPED', fetched: 0, inserted: 0, duplicates: 0, error: msg };
   }
 
+  // SerpApi free plan is ~250 searches/month: run the automatic sync at most once per window.
+  if (sourceSlug === 'serpapi-google-jobs' && source.lastSyncAt) {
+    const minHours = parseFloat(process.env.SERPAPI_MIN_HOURS || '20') || 20;
+    const ageHours = (Date.now() - new Date(source.lastSyncAt).getTime()) / 3600000;
+    if (ageHours < minHours) {
+      return {
+        status: 'SKIPPED',
+        fetched: 0,
+        inserted: 0,
+        duplicates: 0,
+        error: `SerpApi synced ${ageHours.toFixed(1)}h ago; waiting ${minHours}h to protect the free quota.`,
+      };
+    }
+  }
+
   const fetchResult = await adapter.fetchJobs();
   const durationMs = Date.now() - start;
 

@@ -28,12 +28,48 @@ interface SerpApiJobResult {
   share_link?: string;
 }
 
-const DEFAULT_SERPAPI_QUERIES = [
-  { q: 'Software Developer jobs in Hyderabad', location: 'Hyderabad, Telangana, India' },
-  { q: 'Hardware Embedded VLSI Engineer jobs in India', location: 'Bengaluru, Karnataka, India' },
-  { q: 'Fresher Internship Software Engineer India', location: 'India' },
-  { q: 'Government PSU Engineering jobs India', location: 'India' },
+// India-focused query pool. Each run uses only a few (rotating daily) so the
+// SerpApi free plan (~250 searches/month) is not exhausted.
+const INDIA_CITIES: Array<{ name: string; location: string }> = [
+  { name: 'Hyderabad', location: 'Hyderabad, Telangana, India' },
+  { name: 'Bengaluru', location: 'Bengaluru, Karnataka, India' },
+  { name: 'Chennai', location: 'Chennai, Tamil Nadu, India' },
+  { name: 'Pune', location: 'Pune, Maharashtra, India' },
+  { name: 'Mumbai', location: 'Mumbai, Maharashtra, India' },
+  { name: 'Delhi NCR', location: 'Delhi, India' },
+  { name: 'Noida', location: 'Noida, Uttar Pradesh, India' },
+  { name: 'Vijayawada', location: 'Vijayawada, Andhra Pradesh, India' },
+  { name: 'Visakhapatnam', location: 'Visakhapatnam, Andhra Pradesh, India' },
+  { name: 'Warangal', location: 'Warangal, Telangana, India' },
 ];
+
+const ROLES = [
+  'Software Developer',
+  'Python Developer',
+  'Frappe ERPNext Developer',
+  'Embedded VLSI Hardware Engineer',
+  'Fresher Software Engineer',
+];
+
+const DEFAULT_SERPAPI_QUERIES: Array<{ q: string; location: string }> = [
+  // Hyderabad gets the most coverage
+  ...ROLES.map((r) => ({ q: `${r} jobs in Hyderabad`, location: 'Hyderabad, Telangana, India' })),
+  ...INDIA_CITIES.slice(1).flatMap((c) => [
+    { q: `Software Developer jobs in ${c.name}`, location: c.location },
+    { q: `Fresher Engineer jobs in ${c.name}`, location: c.location },
+  ]),
+  { q: 'Government PSU Engineering jobs India', location: 'India' },
+  { q: 'Internship Software Engineer India', location: 'India' },
+  { q: 'Work from home developer jobs India', location: 'India' },
+];
+
+function pickTodaysQueries(): Array<{ q: string; location: string }> {
+  const perRun = Math.max(1, parseInt(process.env.SERPAPI_QUERIES_PER_RUN || '8', 10) || 8);
+  const total = DEFAULT_SERPAPI_QUERIES.length;
+  const day = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+  const startIdx = (day * perRun) % total;
+  return Array.from({ length: Math.min(perRun, total) }, (_, i) => DEFAULT_SERPAPI_QUERIES[(startIdx + i) % total]);
+}
 
 export async function fetchSerpApiQuery(
   query: string,
@@ -144,7 +180,7 @@ export const serpApiGoogleJobsAdapter: JobSourceAdapter = {
     const allJobs: NormalizedJobInput[] = [];
     const errors: string[] = [];
 
-    for (const q of DEFAULT_SERPAPI_QUERIES) {
+    for (const q of pickTodaysQueries()) {
       const result = await fetchSerpApiQuery(q.q, q.location);
       if (result.jobs.length) {
         allJobs.push(...result.jobs);

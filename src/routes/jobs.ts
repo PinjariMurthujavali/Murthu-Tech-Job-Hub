@@ -203,7 +203,11 @@ router.get('/', async (req, res) => {
 
     const whereClause = and(...conditions);
 
-    let orderByClause = [desc(jobs.isFeatured), desc(jobs.postedAt)];
+    let orderByClause = [
+      desc(jobs.isFeatured),
+      desc(sql`CASE WHEN ${jobs.country} = 'India' THEN 1 ELSE 0 END`),
+      desc(jobs.postedAt),
+    ];
     if (sort === 'salary') {
       orderByClause = [desc(sql`COALESCE(${jobs.salaryMax}, 0)`), desc(jobs.postedAt)];
     } else if (sort === 'verified') {
