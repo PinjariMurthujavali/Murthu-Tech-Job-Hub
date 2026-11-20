@@ -13,7 +13,6 @@ import feedbackRouter from './src/routes/feedback.ts';
 import jobsRouter from './src/routes/jobs.ts';
 import userRouter from './src/routes/user.ts';
 import { startBackgroundScheduler } from './src/services/scheduler.ts';
-app.use('/api/jobs', jobsRouter);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const isProduction = process.env.NODE_ENV === 'production';
