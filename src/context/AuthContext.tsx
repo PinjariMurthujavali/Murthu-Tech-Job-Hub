@@ -1,16 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleAuthProvider } from '../lib/firebase';
 import { apiFetch, setApiAuthToken } from '../lib/api';
 import type { AuthUser, UserProfileData } from '../types';
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 interface AuthContextValue {
   user: AuthUser | null;
   profile: UserProfileData | null;
   unreadNotifications: number;
   loading: boolean;
-    subscribed: boolean;
+  subscribed: boolean;
   verifySubscription: () => Promise<boolean>;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
@@ -30,6 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+
+  const checkStatus = useCallback(async () => {
+    try {
+      const r = await apiFetch<{ subscribed: boolean }>('/api/user/subscription-status');
+      setSubscribed(r.subscribed);
+    } catch {
+      setSubscribed(false);
+    }
+  }, []);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -41,21 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       setProfile(data.profile);
       setUnreadNotifications(data.unreadNotifications || 0);
+      await checkStatus();
     } catch {
       // Ignore if unauthenticated
     }
-  }, []);
-
-  const [subscribed, setSubscribed] = useState(false);
-
-  const checkStatus = useCallback(async () => {
-    try {
-      const r = await apiFetch<{ subscribed: boolean }>('/api/user/subscription-status');
-      setSubscribed(r.subscribed);
-    } catch {
-      setSubscribed(false);
-    }
-  }, []);
+  }, [checkStatus]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
@@ -117,18 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return sendYoutubeToken(accessToken);
   };
 
-  const loginWithGoogle = async () => {
-    const cred = await signInWithPopup(auth, googleAuthProvider);
-    const idToken = await cred.user.getIdToken();
-    setApiAuthToken(idToken);
-    await apiFetch('/api/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ idToken }),
-    });
-    await refreshSession();
-    setAuthModalOpen(false);
-  };
-
   const loginWithEmail = async (email: string, password: string) => {
     const res = await apiFetch<{ token: string; user: AuthUser }>('/api/auth/login', {
       method: 'POST',
@@ -152,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setApiAuthToken(null);
     setUser(null);
+    setSubscribed(false);
     setProfile(null);
     setUnreadNotifications(0);
     try {
@@ -168,6 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         unreadNotifications,
         loading,
+        subscribed,
+        verifySubscription,
         authModalOpen,
         setAuthModalOpen,
         loginWithGoogle,
