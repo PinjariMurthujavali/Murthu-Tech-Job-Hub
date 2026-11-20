@@ -90,6 +90,7 @@ export default function JobsPage() {
         setJobs(Array.isArray(res?.items) ? res.items : []);
         setTotal(res?.pagination?.total || 0);
         setTotalPages(res?.pagination?.totalPages || 1);
+      })
       .catch(() => setJobs([]))
       .finally(() => setLoading(false));
   }, [
