@@ -22,6 +22,8 @@ export const users = pgTable(
     role: text('role').notNull().default('user'),
     isSuspended: boolean('is_suspended').notNull().default(false),
     emailVerified: boolean('email_verified').notNull().default(false),
+    youtubeSubscribed: boolean('youtube_subscribed').notNull().default(false),
+    youtubeVerifiedAt: timestamp('youtube_verified_at'),
     resetToken: text('reset_token'),
     resetTokenExpiresAt: timestamp('reset_token_expires_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

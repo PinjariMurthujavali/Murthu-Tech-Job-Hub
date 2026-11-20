@@ -3,12 +3,15 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleAuthProvider } from '../lib/firebase';
 import { apiFetch, setApiAuthToken } from '../lib/api';
 import type { AuthUser, UserProfileData } from '../types';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 interface AuthContextValue {
   user: AuthUser | null;
   profile: UserProfileData | null;
   unreadNotifications: number;
   loading: boolean;
+    subscribed: boolean;
+  verifySubscription: () => Promise<boolean>;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   loginWithGoogle: () => Promise<void>;
@@ -19,6 +22,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const YT_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -39,6 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUnreadNotifications(data.unreadNotifications || 0);
     } catch {
       // Ignore if unauthenticated
+    }
+  }, []);
+
+  const [subscribed, setSubscribed] = useState(false);
+
+  const checkStatus = useCallback(async () => {
+    try {
+      const r = await apiFetch<{ subscribed: boolean }>('/api/user/subscription-status');
+      setSubscribed(r.subscribed);
+    } catch {
+      setSubscribed(false);
     }
   }, []);
 
@@ -63,6 +78,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return () => unsub();
   }, [refreshSession]);
+
+  const sendYoutubeToken = async (accessToken?: string) => {
+    if (!accessToken) return false;
+    try {
+      const r = await apiFetch<{ subscribed: boolean }>('/api/user/verify-subscription', {
+        method: 'POST',
+        body: JSON.stringify({ accessToken }),
+      });
+      setSubscribed(r.subscribed);
+      return r.subscribed;
+    } catch {
+      return false;
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    googleAuthProvider.addScope(YT_SCOPE);
+    const cred = await signInWithPopup(auth, googleAuthProvider);
+    const accessToken = GoogleAuthProvider.credentialFromResult(cred)?.accessToken;
+    const idToken = await cred.user.getIdToken();
+    setApiAuthToken(idToken);
+    await apiFetch('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    await refreshSession();
+    await sendYoutubeToken(accessToken);
+    setAuthModalOpen(false);
+  };
+
+  const verifySubscription = async () => {
+    googleAuthProvider.addScope(YT_SCOPE);
+    const cred = await signInWithPopup(auth, googleAuthProvider);
+    const accessToken = GoogleAuthProvider.credentialFromResult(cred)?.accessToken;
+    const idToken = await cred.user.getIdToken();
+    setApiAuthToken(idToken);
+    return sendYoutubeToken(accessToken);
+  };
 
   const loginWithGoogle = async () => {
     const cred = await signInWithPopup(auth, googleAuthProvider);

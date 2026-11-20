@@ -60,6 +60,45 @@ router.get('/profile', async (req: AuthRequest, res) => {
   }
 });
 
+router.get('/subscription-status', async (req: AuthRequest, res) => {
+  const u = req.authUser!;
+  if (u.role === 'admin') return res.json({ subscribed: true });
+  const [row] = await db
+    .select({ ok: users.youtubeSubscribed })
+    .from(users)
+    .where(eq(users.id, u.id))
+    .limit(1);
+  res.json({ subscribed: Boolean(row?.ok) });
+});
+
+router.post('/verify-subscription', async (req: AuthRequest, res) => {
+  try {
+    const { accessToken } = req.body as { accessToken?: string };
+    if (!accessToken) return res.status(400).json({ error: 'Missing Google token.' });
+    if (!process.env.YT_CHANNEL_ID) return res.status(500).json({ error: 'Channel not configured.' });
+
+    const r = await fetch(
+      `https://www.googleapis.com/youtube/v3/subscriptions?part=id&mine=true&forChannelId=${encodeURIComponent(process.env.YT_CHANNEL_ID)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const data: any = await r.json();
+    if (!r.ok) {
+      console.error('YT verify error:', data?.error?.message);
+      return res.status(400).json({ subscribed: false, error: 'Could not verify with YouTube.' });
+    }
+    const subscribed = Array.isArray(data.items) && data.items.length > 0;
+    if (subscribed) {
+      await db
+        .update(users)
+        .set({ youtubeSubscribed: true, youtubeVerifiedAt: new Date() })
+        .where(eq(users.id, req.authUser!.id));
+    }
+    res.json({ subscribed });
+  } catch (err) {
+    console.error('verify-subscription error:', err);
+    res.status(500).json({ error: 'Verification failed.' });
+  }
+});
 router.put('/profile', async (req: AuthRequest, res) => {
   try {
     const schema = z.object({

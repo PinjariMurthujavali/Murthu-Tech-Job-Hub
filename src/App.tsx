@@ -33,6 +33,9 @@ export default function App() {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
+	      <Route path="/jobs" element={<SubscribeGate><JobsPage /></SubscribeGate>} />
+<Route path="/jobs/:idOrSlug" element={<SubscribeGate><JobDetailPage /></SubscribeGate>} />
+<Route path="/hyderabad-jobs" element={<SubscribeGate><HyderabadJobsPage /></SubscribeGate>} />
             </Routes>
           </main>
           <Footer />

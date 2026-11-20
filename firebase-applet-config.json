@@ -9,3 +9,12 @@
   "oAuthClientId": "718679694673-u59ripbts6lo1q5as67g9f9fblqc98sv.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }
+
+{
+  "apiKey": "AIzaSyDjEyDQeM08qWUB9rFS7UBUqiEwfu-uT-k",
+  "authDomain": "murthu-job-hub.firebaseapp.com",
+  "projectId": "murthu-job-hub",
+  "storageBucket": "murthu-job-hub.firebasestorage.app",
+  "messagingSenderId": "19044430964",
+  "appId": "1:19044430964:web:54d7a824c9c040047acd21"
+}

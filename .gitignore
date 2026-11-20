@@ -10,3 +10,9 @@ test.json
 murthu-job-hub-fix
 murthu-job-hub-fix.zip
 uploads/
+.env
+node_modules
+uploads
+test.json
+murthu-job-hub-fix.zip
+murthu-job-hub-fix

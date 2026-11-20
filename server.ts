@@ -13,6 +13,7 @@ import feedbackRouter from './src/routes/feedback.ts';
 import jobsRouter from './src/routes/jobs.ts';
 import userRouter from './src/routes/user.ts';
 import { startBackgroundScheduler } from './src/services/scheduler.ts';
+import { requireSubscribed } from './src/middleware/auth.ts';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const isProduction = process.env.NODE_ENV === 'production';
@@ -52,7 +53,7 @@ async function startServer() {
 
   // REST API routes
   app.use('/api/auth', authRouter);
-  app.use('/api/jobs', jobsRouter);
+  app.use('/api/jobs', requireSubscribed, jobsRouter);
   app.use('/api/user', userRouter);
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/admin', adminRouter);

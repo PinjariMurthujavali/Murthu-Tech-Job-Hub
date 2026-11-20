@@ -226,3 +226,31 @@ export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFu
   }
   next();
 };
+
+
+export const requireSubscribed = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // public endpoints (home page stats)
+    if (['/stats', '/categories', '/companies'].includes(req.path)) return next();
+  if (req.path === '/' && Number(req.query.limit) > 0 && Number(req.query.limit) <= 6) return next();
+  try {
+    const user = await resolveAuthFromRequest(req);
+    if (!user) return res.status(401).json({ error: 'Please sign in.', code: 'LOGIN_REQUIRED' });
+    if (user.isSuspended) return res.status(403).json({ error: 'Account suspended.' });
+    req.authUser = user;
+    if (user.role === 'admin') return next();
+    const [row] = await db
+      .select({ ok: users.youtubeSubscribed })
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+    if (!row?.ok) {
+      return res
+        .status(403)
+        .json({ error: 'Subscribe to our YouTube channel to unlock jobs.', code: 'SUBSCRIBE_REQUIRED' });
+    }
+    next();
+  } catch (err) {
+    console.error('Subscribe gate error:', err);
+    res.status(401).json({ error: 'Authentication failed.' });
+  }
+};
