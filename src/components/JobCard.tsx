@@ -23,6 +23,9 @@ export default function JobCard({ job, isSaved = false, onToggleSave, onReport }
   const { user, setAuthModalOpen } = useAuth();
   const [saving, setSaving] = useState(false);
 
+  // Safe list of skills: handles null / undefined / non-array values from the API
+  const skills: string[] = Array.isArray(job.skills) ? job.skills : [];
+
   const handleApplyClick = async () => {
     try {
       await apiFetch(`/api/jobs/${job.id}/click`, { method: 'POST' });
@@ -139,9 +142,9 @@ export default function JobCard({ job, isSaved = false, onToggleSave, onReport }
           )}
         </div>
 
-        {job.skills.length > 0 && (
+        {skills.length > 0 && (
           <p className="mt-3 text-xs text-slate-400 line-clamp-1">
-            Skills: {job.skills.slice(0, 5).join(' · ')}
+            Skills: {skills.slice(0, 5).join(' \u00B7 ')}
           </p>
         )}
       </div>
@@ -150,7 +153,7 @@ export default function JobCard({ job, isSaved = false, onToggleSave, onReport }
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           {renderStatusIndicator()}
           <span className="font-mono tabular-nums text-[11px] text-slate-400">
-            {job.sourceName} · Verified {verifiedTime} · {formattedDate}
+            {job.sourceName} &middot; Verified {verifiedTime} &middot; {formattedDate}
           </span>
         </div>
 
