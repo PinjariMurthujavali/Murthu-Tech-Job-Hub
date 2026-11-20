@@ -13,6 +13,7 @@ import feedbackRouter from './src/routes/feedback.ts';
 import jobsRouter from './src/routes/jobs.ts';
 import userRouter from './src/routes/user.ts';
 import { startBackgroundScheduler } from './src/services/scheduler.ts';
+import { runExpirySweep, runValidationBatch } from './src/services/validationEngine.ts';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const isProduction = process.env.NODE_ENV === 'production';
@@ -48,6 +49,34 @@ async function startServer() {
   // Public health endpoint
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'MURTHU JOB HUB', timestamp: new Date().toISOString() });
+  });
+
+  // Cron-triggered validation (called by an external pinger; also wakes the sleeping free Render service)
+  let cronValidationRunning = false;
+  app.get('/api/cron/validate', (req, res) => {
+    const secret = process.env.CRON_SECRET;
+    const provided = req.get('x-cron-secret') || (req.query.key as string | undefined);
+    if (!secret || provided !== secret) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    if (cronValidationRunning) {
+      res.json({ started: false, reason: 'A validation run is already in progress.' });
+      return;
+    }
+    // Respond immediately so the pinger does not time out, then run in the background
+    res.json({ started: true });
+    cronValidationRunning = true;
+    (async () => {
+      try {
+        await runExpirySweep();
+        await runValidationBatch(25);
+      } catch (err) {
+        console.error('Cron validation error:', err);
+      } finally {
+        cronValidationRunning = false;
+      }
+    })();
   });
 
   // REST API routes

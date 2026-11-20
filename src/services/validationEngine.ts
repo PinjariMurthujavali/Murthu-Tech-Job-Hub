@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lt } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { jobs, validationLogs } from '../db/schema.ts';
 
@@ -180,7 +180,7 @@ export async function runValidationBatch(limitCount = 15) {
         inArray(jobs.verificationStatus, ['UNVERIFIED', 'UNDER REVIEW', 'LIVE VERIFIED'])
       )
     )
-    .orderBy(desc(jobs.validationPriority), asc(jobs.lastVerifiedAt))
+    .orderBy(desc(jobs.validationPriority), sql`${jobs.lastVerifiedAt} ASC NULLS FIRST`)
     .limit(limitCount);
 
   const results = [];
