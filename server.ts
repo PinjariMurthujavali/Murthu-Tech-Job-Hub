@@ -52,7 +52,7 @@ async function startServer() {
 
   // REST API routes
   app.use('/api/auth', authRouter);
-  app.use('/api/jobs', requireSubscribed, jobsRouter);
+  app.use('/api/jobs', jobsRouter);
   app.use('/api/user', userRouter);
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/admin', adminRouter);
