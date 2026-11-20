@@ -32,6 +32,33 @@ import { validateSingleJob } from '../services/validationEngine.ts';
 
 const router = Router();
 
+// "Hyderabad" search should also match nearby areas and "Hyderabad, Telangana" style text
+const HYDERABAD_ALIASES = [
+  'hyderabad',
+  'secunderabad',
+  'telangana',
+  'hitech',
+  'hi-tech',
+  'gachibowli',
+  'madhapur',
+  'kondapur',
+  'kukatpally',
+  'ameerpet',
+  'banjara',
+  'uppal',
+  'begumpet',
+  'hyd',
+];
+
+function locationPatterns(raw: string): string[] {
+  const base = raw.split(',')[0].trim().toLowerCase();
+  if (!base) return [];
+  if (HYDERABAD_ALIASES.some((a) => base.includes(a))) {
+    return HYDERABAD_ALIASES.map((a) => `%${a}%`);
+  }
+  return [`%${base}%`];
+}
+
 const evidenceDir = path.resolve(process.cwd(), 'uploads', 'evidence');
 fs.mkdirSync(evidenceDir, { recursive: true });
 
@@ -118,21 +145,23 @@ router.get('/', async (req, res) => {
       conditions.push(ilike(jobs.categoryName, `%${category}%`));
     }
     if (location) {
-      const locPat = `%${location}%`;
-      conditions.push(
-        or(
-          ilike(jobs.location, locPat),
-          ilike(jobs.city, locPat),
-          ilike(jobs.state, locPat),
-          ilike(jobs.country, locPat)
-        )!
-      );
+      const pats = locationPatterns(location);
+      if (pats.length) {
+        const parts = pats.flatMap((p) => [
+          ilike(jobs.location, p),
+          ilike(jobs.city, p),
+          ilike(jobs.state, p),
+        ]);
+        conditions.push(or(...parts)!);
+      }
     }
     if (city) {
       if (city.toLowerCase() === 'international') {
         conditions.push(sql`${jobs.country} <> 'India'`);
       } else {
-        conditions.push(or(ilike(jobs.city, `%${city}%`), ilike(jobs.location, `%${city}%`))!);
+        const pats = locationPatterns(city);
+        const parts = pats.flatMap((p) => [ilike(jobs.city, p), ilike(jobs.location, p)]);
+        conditions.push(or(...parts)!);
       }
     }
     if (state) {
@@ -254,7 +283,17 @@ router.get('/stats', async (_req, res) => {
         db
           .select({ count: count() })
           .from(jobs)
-          .where(and(activeWhere, or(ilike(jobs.city, '%Hyderabad%'), ilike(jobs.location, '%Hyderabad%'))!)),
+          .where(
+            and(
+              activeWhere,
+              or(
+                ...HYDERABAD_ALIASES.flatMap((a) => [
+                  ilike(jobs.city, `%${a}%`),
+                  ilike(jobs.location, `%${a}%`),
+                ])
+              )!
+            )
+          ),
         db
           .select({ count: count() })
           .from(jobs)
